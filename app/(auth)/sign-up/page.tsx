@@ -4,14 +4,18 @@ import FooterLink from "@/components/forms/FooterLink";
 import InputField from "@/components/forms/InputField";
 import SelectField from "@/components/forms/SelectField";
 import { Button } from "@/components/ui/button";
+import { signUpWithEmail } from "@/lib/actions/auth.actions";
 import {
   INVESTMENT_GOALS,
   PREFERRED_INDUSTRIES,
   RISK_TOLERANCE_OPTIONS,
 } from "@/lib/constants";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 const SignUp = () => {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -32,8 +36,16 @@ const SignUp = () => {
   const onSubmit = async (data: SignUpFormData) => {
     try {
       console.log(data);
+      const result = await signUpWithEmail(data);
+      if (result.success) router.push("/");
     } catch (error) {
       console.log(error);
+      toast.error("Sign up failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to create an account.",
+      });
     }
   };
   return (
@@ -42,17 +54,15 @@ const SignUp = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <InputField
-          name="name"
+          name="fullName"
           label="Full Name"
           placeholder="John Doe"
           type="text"
           register={register}
           error={errors.fullName}
-          validation={{
-            required: true,
-            minLength: 2,
-          }}
+          validation={{ required: true, minLength: 2 }}
         />
+
         <InputField
           name="email"
           label="Email"
@@ -62,8 +72,8 @@ const SignUp = () => {
           error={errors.email}
           validation={{
             required: "Email is required",
-            pattern: /^\w+@\.\w+$/,
-            message: "Email address is required",
+            pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            message: "Invalid email address",
           }}
         />
         <InputField
@@ -94,7 +104,7 @@ const SignUp = () => {
           error={errors.investmentGoals}
         />
         <SelectField
-          name="riskTolerence"
+          name="riskTolerance"
           label="Risk Tolerence"
           placeholder="Select your risk level"
           options={RISK_TOLERANCE_OPTIONS}
@@ -102,7 +112,7 @@ const SignUp = () => {
           error={errors.riskTolerance}
         />
         <SelectField
-          name="preferedIndustry"
+          name="preferredIndustry"
           label="Prefered Industry"
           placeholder="Select your prefered industry"
           options={PREFERRED_INDUSTRIES}
