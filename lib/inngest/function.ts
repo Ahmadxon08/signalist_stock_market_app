@@ -66,6 +66,11 @@ export const sendDailyNewsSummary = inngest.createFunction(
     ///step 1
 
     const users = await step.run("get-all-users", getAllUsersFromNewsEmail);
+    console.log(
+      "USER EMAILS:",
+      users?.map((u) => u.email)
+    );
+
     if (!users || users?.length === 0)
       return { success: false, message: "No user found for news email" };
 
