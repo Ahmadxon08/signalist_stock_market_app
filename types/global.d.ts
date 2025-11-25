@@ -78,6 +78,7 @@ declare global {
     name: string;
     exchange: string;
     type: string;
+    label?: string;
   };
 
   type StockWithWatchlistStatus = Stock & {
