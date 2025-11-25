@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import {
   CommandDialog,
   CommandEmpty,
-  CommandGroup,
   CommandInput,
-  CommandItem,
   CommandList,
 } from "./ui/command";
 import { Button } from "./ui/button";
@@ -104,7 +102,7 @@ const SearchCommand = ({
                 {displayStocks?.length || 0})
               </div>
               {displayStocks?.map((stock, i) => (
-                <li key={stock?.label} className="search-item">
+                <li key={i} className="search-item">
                   <Link
                     href={`/stocks/${stock.symbol}`}
                     onClick={handleSelectStock}
@@ -121,22 +119,6 @@ const SearchCommand = ({
               ))}
             </ul>
           )}
-          {/* //{" "}
-          <CommandGroup heading="Stocks">
-            //{" "}
-            <CommandItem value="AAPL" onSelect={handleSelectStock}>
-              // AAPL //{" "}
-            </CommandItem>
-            //{" "}
-            <CommandItem value="GOOGl" onSelect={handleSelectStock}>
-              // AAPL //{" "}
-            </CommandItem>
-            //{" "}
-            <CommandItem value="MSFT" onSelect={handleSelectStock}>
-              // AAPL //{" "}
-            </CommandItem>
-            //{" "}
-          </CommandGroup> */}
         </CommandList>
       </CommandDialog>
     </>
