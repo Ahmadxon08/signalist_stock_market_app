@@ -1,9 +1,13 @@
 import { getNews } from "../actions/finnhub.actions";
 import { getAllUsersFromNewsEmail } from "../actions/user.actions";
 import { getWatchlistSymbolsByEmail } from "../actions/watchlist.actions";
-import { sendWelcomeEmail } from "../nodemailer";
+import { sendNewsSummaryEmail, sendWelcomeEmail } from "../nodemailer";
+import { formatDateToday } from "../utils";
 import { inngest } from "./client";
-import { PERSONALIZED_WELCOME_EMAIL_PROMPT } from "./prompts";
+import {
+  NEWS_SUMMARY_EMAIL_PROMPT,
+  PERSONALIZED_WELCOME_EMAIL_PROMPT,
+} from "./prompts";
 
 export const sendSignUpEmail = inngest.createFunction(
   { id: "sign-up-email" },
@@ -55,14 +59,17 @@ export const sendSignUpEmail = inngest.createFunction(
 
 export const sendDailyNewsSummary = inngest.createFunction(
   { id: "daily-news-summary" },
-  [{ event: "app/send.daily.news" }, { cron: "0 12 ***" }],
+  [{ event: "app/send.daily.news" }, { cron: "0 12 * * *" }],
   async ({ step }) => {
     // get all users
+
+    ///step 1
 
     const users = await step.run("get-all-users", getAllUsersFromNewsEmail);
     if (!users || users?.length === 0)
       return { success: false, message: "No user found for news email" };
 
+    /// Step 2
     const results = await step.run("fetch-user-news", async () => {
       const perUser: Array<{
         user: UserForNewsEmail;
@@ -97,6 +104,50 @@ export const sendDailyNewsSummary = inngest.createFunction(
       }
 
       return perUser;
+    });
+
+    /// Step 3
+    const usersNewsSummaries: { user: User; newsContent: string | null }[] = [];
+
+    for (const { user, articles } of results) {
+      try {
+        const prompt = NEWS_SUMMARY_EMAIL_PROMPT.replace(
+          "{{newsData}}",
+          JSON.stringify(articles, null, 2)
+        );
+        const response = await step.ai.infer(`summarize-news-${user.email}`, {
+          model: step.ai.models.gemini({ model: "gemini-2.5-flash-lite" }),
+          body: {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+          },
+        });
+        const part = response.candidates?.[0]?.content?.parts?.[0];
+        const newsContent =
+          (part && "text" in part ? part.text : null) || "No Market news";
+
+        usersNewsSummaries.push({ user, newsContent });
+      } catch (error) {
+        console.error("Error occuried", error);
+        usersNewsSummaries.push({ user, newsContent: null });
+      }
+    }
+
+    // Step 4
+    await step.run("send-news-emails", async () => {
+      await Promise.all(
+        usersNewsSummaries.map(async ({ user, newsContent }) => {
+          if (!newsContent) return false;
+          return await sendNewsSummaryEmail({
+            email: user.email,
+            date: formatDateToday,
+            newsContent,
+          });
+        })
+      );
+      return {
+        success: true,
+        message: "Daily news Summary email sent successfully",
+      };
     });
   }
 );
