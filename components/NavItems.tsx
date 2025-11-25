@@ -5,7 +5,11 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import SearchCommand from "./SearchCommand";
 
-const NavItems = () => {
+const NavItems = ({
+  initialStocks,
+}: {
+  initialStocks: StockWithWatchlistStatus[];
+}) => {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
@@ -22,7 +26,7 @@ const NavItems = () => {
               <SearchCommand
                 renderAs="text"
                 label="Search"
-                initialStocks={[]}
+                initialStocks={initialStocks}
               />
             </li>
           );
